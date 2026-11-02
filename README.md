@@ -60,6 +60,8 @@ BIND_ADDRESS=0.0.0.0 PORT=8080 docker compose up -d
 
 The container runs read-only with `no-new-privileges`.
 
+The build step needs network access: `npm ci` fetches packages and `next/font` downloads the two fonts from Google Fonts so they can be self-hosted. If a build fails with a font fetch error on a flaky connection, run it again.
+
 Because the output is plain static files, `./out` can also be hosted on any static host (GitHub Pages, Netlify, S3, Caddy and so on).
 
 ### Testing over Tailscale
