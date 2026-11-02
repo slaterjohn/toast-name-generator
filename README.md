@@ -122,7 +122,11 @@ Nothing else is stored, and nothing is sent anywhere. In particular, the name ty
 
 Uniqueness is guaranteed within a tab's session only. It is not guaranteed across tabs, devices or browsers, because there is no server-side history.
 
-## Fonts and licences
+## Licence
+
+The code is released under the [MIT License](LICENSE). The licence covers this project's code and word lists only. It grants no rights in *Toast of London* or *Toast of Tinseltown*, and this project has no connection with their creators or broadcasters.
+
+## Fonts
 
 Playfair Display and Source Sans 3, both under the SIL Open Font License, are downloaded at build time by `next/font` and served from the same origin.
 
