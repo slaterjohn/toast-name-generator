@@ -1,0 +1,15 @@
+services:
+  web:
+    build: .
+    image: toast-name-generator:latest
+    container_name: toast-name-generator
+    restart: unless-stopped
+    # Bound to loopback by default; expose over a tailnet with `tailscale serve`
+    # (see README). Set BIND_ADDRESS=0.0.0.0 to publish on all interfaces.
+    ports:
+      - "${BIND_ADDRESS:-127.0.0.1}:${PORT:-3080}:8080"
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
