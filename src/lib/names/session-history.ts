@@ -1,5 +1,4 @@
-import type { Exclusions, NameEngine } from "./generator";
-import { normaliseName } from "./normalise";
+import { resolveName, type Exclusions, type NameEngine } from "./generator";
 import type { GeneratedName, RandomSource } from "./types";
 
 /** Given names and surnames from this many previous generations are avoided. */
@@ -141,14 +140,14 @@ export class NameSession {
     if (!isSnapshot(snapshot) || snapshot.corpusVersion !== engine.corpus.version) return session;
 
     for (const id of snapshot.emitted.slice(-MAX_PERSISTED_EMITTED)) {
-      const name = resolve(engine, id);
+      const name = resolveName(engine, id);
       if (!name || session.emittedIds.has(name.id)) continue;
       session.emittedIds.add(name.id);
       session.emittedNorms.add(name.norm);
       session.emittedOrder.push(name.id);
     }
     for (const [givenId, surnameId] of snapshot.recent.slice(-window)) {
-      const name = resolve(engine, `${givenId}|${surnameId}`);
+      const name = resolveName(engine, `${givenId}|${surnameId}`);
       if (!name) continue;
       session.recent.push({
         givenId,
@@ -160,24 +159,6 @@ export class NameSession {
     }
     return session;
   }
-}
-
-function resolve(engine: NameEngine, fullId: string): GeneratedName | null {
-  const [givenId, surnameId] = fullId.split("|");
-  const given = givenId ? engine.givenById(givenId) : undefined;
-  const surname = surnameId ? engine.surnameById(surnameId) : undefined;
-  if (!given || !surname) return null;
-  const templates = engine.templatesFor(given, surname);
-  if (templates.length === 0) return null;
-  const display = `${given.text} ${surname.text}`;
-  return {
-    given,
-    surname,
-    id: fullId,
-    display,
-    norm: normaliseName(display),
-    templateId: templates[0].id,
-  };
 }
 
 function isSnapshot(value: unknown): value is SessionSnapshot {

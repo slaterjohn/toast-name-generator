@@ -242,3 +242,25 @@ export function createEngine(
     templatesFor,
   };
 }
+
+/**
+ * Rebuild a GeneratedName from its canonical `${givenId}|${surnameId}` ID.
+ * Returns null for unknown IDs or pairs the engine would never emit.
+ */
+export function resolveName(engine: NameEngine, fullId: string): GeneratedName | null {
+  const [givenId, surnameId] = fullId.split("|");
+  const given = givenId ? engine.givenById(givenId) : undefined;
+  const surname = surnameId ? engine.surnameById(surnameId) : undefined;
+  if (!given || !surname) return null;
+  const templates = engine.templatesFor(given, surname);
+  if (templates.length === 0) return null;
+  const display = `${given.text} ${surname.text}`;
+  return {
+    given,
+    surname,
+    id: `${given.id}|${surname.id}`,
+    display,
+    norm: normaliseName(display),
+    templateId: templates[0].id,
+  };
+}

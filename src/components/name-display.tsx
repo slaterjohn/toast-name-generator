@@ -1,25 +1,29 @@
-import type { NameState } from "@/hooks/use-name-session";
+import type { GeneratedName } from "@/lib/names";
 
 /**
  * The generated name, set like a top-billed credit. The visible heading is
  * not a live region; announcements go through a separate polite region so a
  * screen reader hears just the new name, once.
  */
-export function NameDisplay({ state }: { state: NameState }) {
-  const display = state.status === "ready" ? state.name.display : null;
-
+export function NameDisplay({
+  name,
+  label,
+  sequence,
+}: {
+  name: GeneratedName | null;
+  label: string;
+  sequence: number | string;
+}) {
   return (
     <div className="flex min-h-[9.5rem] flex-col items-center justify-center sm:min-h-[11rem]">
-      <p className="mb-3 text-xs font-semibold tracking-[0.25em] text-ink-soft uppercase">
-        May we present
-      </p>
-      {display ? (
+      <p className="mb-3 text-xs font-semibold tracking-[0.25em] text-ink-soft uppercase">{label}</p>
+      {name ? (
         <h2
-          key={state.status === "ready" ? state.sequence : "x"}
+          key={sequence}
           className="name-enter max-w-full font-display text-[clamp(2.5rem,10vw,4.75rem)] leading-[1.08] font-bold text-balance break-words text-ink"
           data-testid="generated-name"
         >
-          {display}
+          {name.display}
         </h2>
       ) : (
         <div
@@ -28,7 +32,7 @@ export function NameDisplay({ state }: { state: NameState }) {
         />
       )}
       <p className="sr-only" aria-live="polite" aria-atomic="true">
-        {display ?? ""}
+        {name ? `${label}: ${name.display}` : ""}
       </p>
     </div>
   );

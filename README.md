@@ -13,6 +13,9 @@ Everything runs in the browser. There is no backend, database, account, analytic
 - Never reuses a given name or surname from the previous 20 names. If the pool ever runs too thin for that, it relaxes the oldest exclusions first, never the name immediately before, and says so on screen.
 - **Copy name** uses the Clipboard API, with a fallback for plain-HTTP hosts and a clear message if copying fails.
 - **Favourite** saves the name to this browser's localStorage. The favourites list opens from a small disclosure button and supports copying, removing and clearing (with confirmation).
+- **Find your own Toast name**: type your name into one field and get the same Toast name every time, on any browser. The name you type never leaves the page. See [docs/PHASE-2.md](docs/PHASE-2.md).
+- **Share link** copies a link to the displayed name (or opens the share sheet on phones). Links encode only the generated name, such as `?n=cyril.kettle`.
+- **Download card** saves the name as a 1200 × 630 PNG, drawn in the browser.
 - Keyboard operable, screen-reader friendly (polite live region for the new name, `aria-pressed` on the favourite toggle) and respects `prefers-reduced-motion`.
 
 ## Running it
@@ -32,12 +35,13 @@ npm start            # serve ./out on http://localhost:3000
 npm run typecheck    # tsc, strict mode
 npm run lint         # ESLint (next/core-web-vitals + TypeScript)
 npm test             # Vitest: naming engine + React Testing Library
-npm run test:e2e     # Playwright against ./out (run npm run build first)
+npm run test:e2e     # Playwright against ./out (run npm run build first): Chromium, mobile Chromium, Firefox
+npm run test:jsc     # personalised-name vectors in JavaScriptCore (Safari's engine, macOS only)
 npm run check        # all of the above in order
 npm run report       # corpus sizes, exact eligible-name count, sample output, timing
 ```
 
-To run the browser tests against a deployed copy instead, set `E2E_BASE_URL`, for example `E2E_BASE_URL=http://127.0.0.1:3080 npm run test:e2e`.
+To run the browser tests against a deployed copy instead, set `E2E_BASE_URL`, for example `E2E_BASE_URL=http://127.0.0.1:3080 npm run test:e2e`. Set `E2E_WEBKIT=1` to add Playwright's WebKit (it crashes on some macOS releases, so it is off by default).
 
 ## Deploying with Docker
 
@@ -90,6 +94,11 @@ src/
       generator.ts       candidate selection (bounded sampling + exhaustive fallback)
       session-history.ts no-repeat rules, relaxation, persistence snapshot
       count.ts           exact eligible-name counter
+      canonicalise.ts    Phase 2: versioned canonical form of an entered name
+      sha256.ts          Phase 2: platform-independent SHA-256 and UTF-8
+      deterministic.ts   Phase 2: personalised mapping and frozen version registry
+      share.ts           Phase 2: share codes (encode the output, never the input)
+    name-card.ts         Phase 2: canvas PNG name card
     storage/             favourites (localStorage), session snapshot (sessionStorage)
 tests/
   names/                 engine tests (Vitest)
@@ -97,7 +106,7 @@ tests/
   e2e/                   browser tests (Playwright, includes an axe WCAG 2.2 AA scan)
 docs/
   NAMING-ENGINE.md       design, corpus sizes, measured counts, quality checks
-  PHASE-2.md             personalised-name design contract (not implemented)
+  PHASE-2.md             personalised names, sharing and name cards
 ```
 
 ## Storage and privacy
@@ -107,7 +116,7 @@ docs/
 | Generation history (IDs of names already shown, last 20 components) | `sessionStorage` | Until the tab closes. Capped at the latest 10,000 names. |
 | Favourites (name ID and display text) | `localStorage` | Until cleared in the app or by the browser. Capped at 200. |
 
-Nothing else is stored, and nothing is sent anywhere. If storage is unavailable (private browsing, blocked cookies), the app still works but forgets history on reload.
+Nothing else is stored, and nothing is sent anywhere. In particular, the name typed into **Your name** is kept only in memory while the page is open: it is never stored, put in a URL or sent, and a reload clears it. If storage is unavailable (private browsing, blocked cookies), the app still works but forgets history on reload.
 
 Uniqueness is guaranteed within a tab's session only. It is not guaranteed across tabs, devices or browsers, because there is no server-side history.
 
@@ -117,4 +126,4 @@ Playfair Display and Source Sans 3, both under the SIL Open Font License, are do
 
 ## Status
 
-The MVP is complete. Phase 2 (personalised names from a "Your name" field, shareable results, downloadable cards) is designed in [docs/PHASE-2.md](docs/PHASE-2.md) but not built.
+Both phases are complete: the random generator (MVP) and Phase 2 (personalised names from a "Your name" field, share links and downloadable name cards). Personalised names use mapping version 1, which is frozen; see [docs/PHASE-2.md](docs/PHASE-2.md) for how future corpus changes keep existing names stable.

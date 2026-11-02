@@ -115,7 +115,7 @@ Both halves of a double-barrel count towards the surname window, so *Pemberton-P
 - Node 22, Apple M-series: about **4.5 µs per name** over 10,000 consecutive generations, flat as the session grows (the engine tests assert under 2 ms per name after 5,000 names).
 - Chromium with the CPU throttled 6× (roughly a mid-range phone): **12.7 ms median, 14.8 ms worst** from pressing Regenerate to the new name in the DOM, over 40 presses. This includes React rendering and one animation frame.
 - Counting the full eligible space takes about 3 seconds in Node. It is a test and reporting tool, never run in the browser.
-- The page's own JavaScript chunk (engine, corpus and UI components) is 35 kB, 15 kB gzipped. The favourites panel loads separately when opened.
+- The page's own JavaScript chunk (engine, corpus, personalised mapping and UI components) is 44 kB, 19 kB gzipped. The favourites panel and the name-card renderer load separately when needed.
 
 ## Distribution checks (from the test suite)
 

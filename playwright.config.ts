@@ -17,5 +17,13 @@ export default defineConfig({
   projects: [
     { name: "desktop", use: { ...devices["Desktop Chrome"] } },
     { name: "mobile", use: { ...devices["Pixel 7"] } },
+    // Personalised mappings must match across engines.
+    { name: "firefox", use: { ...devices["Desktop Firefox"] }, testMatch: /personal\.spec\.ts/ },
+    // Playwright's WebKit build crashes on some macOS releases, so it is opt-in
+    // (E2E_WEBKIT=1). `npm run test:jsc` checks the same vectors in
+    // JavaScriptCore directly.
+    ...(process.env.E2E_WEBKIT
+      ? [{ name: "webkit", use: { ...devices["Desktop Safari"] }, testMatch: /personal\.spec\.ts/ }]
+      : []),
   ],
 });

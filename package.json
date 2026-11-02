@@ -12,7 +12,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "report": "tsx scripts/report.ts",
-    "check": "npm run typecheck && npm run lint && npm test && npm run build && npm run test:e2e"
+    "check": "npm run typecheck && npm run lint && npm test && npm run test:jsc && npm run build && npm run test:e2e",
+    "test:jsc": "node scripts/check-jsc.mjs"
   },
   "dependencies": {
     "class-variance-authority": "^0.7.1",

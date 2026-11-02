@@ -61,7 +61,7 @@ describe("NameGenerator", () => {
     expect(second).not.toBe(first);
     expect(screen.getAllByTestId("generated-name")).toHaveLength(1);
     const live = document.querySelector('[aria-live="polite"]');
-    expect(live?.textContent).toBe(second);
+    expect(live?.textContent).toBe(`May we present: ${second}`);
   });
 
   it("ignores an accidental double press", async () => {
@@ -185,4 +185,104 @@ describe("NameGenerator", () => {
     await regenerate(user);
     expect(await currentName()).not.toBe(first);
   });
+
+  describe("personalised names", () => {
+    it("reveals the same Toast name for equivalent inputs", async () => {
+      const user = userEvent.setup();
+      render(<NameGenerator />);
+      await currentName();
+      const input = screen.getByLabelText("Your name");
+      await user.type(input, "John Slater");
+      await user.click(screen.getByRole("button", { name: "Reveal my Toast name" }));
+      expect(await currentName()).toBe("Lavinia Jackdaw");
+      expect(screen.getByText("Your Toast name")).toBeInTheDocument();
+
+      await user.clear(input);
+      await user.type(input, "  JOHN   slater ");
+      await user.click(screen.getByRole("button", { name: "Reveal my Toast name" }));
+      expect(await currentName()).toBe("Lavinia Jackdaw");
+    });
+
+    it("explains an empty submission and marks the field invalid", async () => {
+      const user = userEvent.setup();
+      render(<NameGenerator />);
+      const before = await currentName();
+      await user.click(screen.getByRole("button", { name: "Reveal my Toast name" }));
+      const input = screen.getByLabelText("Your name");
+      expect(input).toHaveAttribute("aria-invalid", "true");
+      expect(input).toHaveAccessibleDescription(/Enter a name first\./);
+      expect(await currentName()).toBe(before);
+    });
+
+    it("returns to random names on Regenerate", async () => {
+      const user = userEvent.setup();
+      render(<NameGenerator />);
+      await currentName();
+      await user.type(screen.getByLabelText("Your name"), "Ada Lovelace");
+      await user.click(screen.getByRole("button", { name: "Reveal my Toast name" }));
+      expect(await currentName()).toBe("Sidney Rutherford");
+      await regenerate(user);
+      expect(await currentName()).not.toBe("Sidney Rutherford");
+      expect(screen.getByText("May we present")).toBeInTheDocument();
+    });
+
+    it("never stores or shares the entered name", async () => {
+      const user = userEvent.setup();
+      const writeText = vi.fn<(text: string) => Promise<void>>(() => Promise.resolve());
+      setClipboard(writeText);
+      Object.defineProperty(navigator, "share", { value: undefined, configurable: true });
+      render(<NameGenerator />);
+      await currentName();
+      const secret = "Wilhelmina Testcase-Privacy";
+      await user.type(screen.getByLabelText("Your name"), secret);
+      await user.click(screen.getByRole("button", { name: "Reveal my Toast name" }));
+      const shown = await currentName();
+      await user.click(screen.getByRole("button", { name: "Favourite" }));
+      await user.click(screen.getByRole("button", { name: "Share link" }));
+
+      const link = writeText.mock.calls.at(-1)?.[0] ?? "";
+      expect(link).toMatch(/\?n=[a-z]+\.[a-z-]+$/);
+      expect(link.toLowerCase()).not.toContain("testcase");
+      expect(link.toLowerCase()).not.toContain("wilhelmina%20");
+
+      const everything = [
+        ...Object.keys(localStorage).map((k) => k + localStorage.getItem(k)),
+        ...Object.keys(sessionStorage).map((k) => k + sessionStorage.getItem(k)),
+        document.cookie,
+        window.location.href,
+      ].join("\n").toLowerCase();
+      expect(everything).not.toContain("testcase");
+      expect(everything).toContain(shown.toLowerCase()); // the favourite itself is stored
+    });
+  });
+
+  describe("share links", () => {
+    afterEach(() => window.history.replaceState(null, "", "/"));
+
+    it("shows the shared name from ?n=", async () => {
+      window.history.replaceState(null, "", "/?n=cyril.kettle");
+      render(<NameGenerator />);
+      await waitFor(() => expect(screen.getByTestId("generated-name")).toHaveTextContent("Cyril Kettle"));
+      expect(screen.getByText("A name shared with you")).toBeInTheDocument();
+    });
+
+    it("ignores an unknown code and says so", async () => {
+      window.history.replaceState(null, "", "/?n=nobody.nothing");
+      render(<NameGenerator />);
+      await currentName();
+      expect(await screen.findByRole("status")).toHaveTextContent("isn't one we recognise");
+      expect(window.location.search).toBe("");
+    });
+
+    it("drops the share code once a new name is generated", async () => {
+      window.history.replaceState(null, "", "/?n=cyril.kettle");
+      const user = userEvent.setup();
+      render(<NameGenerator />);
+      await waitFor(() => expect(screen.getByTestId("generated-name")).toHaveTextContent("Cyril Kettle"));
+      await regenerate(user);
+      expect(window.location.search).toBe("");
+      expect(await currentName()).not.toBe("Cyril Kettle");
+    });
+  });
 });
+
