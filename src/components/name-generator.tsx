@@ -6,6 +6,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useFavourites } from "@/hooks/use-favourites";
 import { useNameSession } from "@/hooks/use-name-session";
+import { track } from "@/lib/analytics";
 import { createEngine, getDefaultCorpus, type GeneratedName } from "@/lib/names";
 import { decodeShareCode, SHARE_PARAM } from "@/lib/names/share";
 import { cn } from "@/lib/utils";
@@ -65,6 +66,7 @@ export function NameGenerator() {
     const shared = decodeShareCode(createEngine(getDefaultCorpus()), code);
     if (shared) {
       setOverride({ kind: "shared", name: shared });
+      track("shared_name_opened", { name: shared.display });
     } else {
       clearShareParam();
       say("That shared name isn't one we recognise, so here's a fresh one.");
@@ -72,24 +74,29 @@ export function NameGenerator() {
   }, [say]);
 
   const onCopyResult = useCallback(
-    (outcome: CopyOutcome, text: string) =>
+    (outcome: CopyOutcome, text: string) => {
+      if (outcome === "copied") track("name_copied", { name: text });
       say(
         outcome === "copied"
           ? `Copied ${text} to the clipboard.`
           : "Couldn't copy automatically. Select the name and copy it by hand.",
-      ),
+      );
+    },
     [say],
   );
 
   const name = override?.name ?? (state.status === "ready" ? state.name : null);
   const mode = override?.kind ?? "random";
   const label = LABELS[mode];
-  const displayKey = name ? `${mode}:${name.id}:${state.status === "ready" ? state.sequence : 0}` : "none";
+  const displayKey = name
+    ? `${mode}:${name.id}:${state.status === "ready" ? state.sequence : 0}`
+    : "none";
   const saved = name ? isFavourite(name.id) : false;
 
   function onToggleFavourite() {
     if (!name) return;
     toggle({ id: name.id, display: name.display });
+    track(saved ? "name_unfavourited" : "name_favourited", { name: name.display, mode });
     say(saved ? "Removed from favourites." : "Saved to favourites.");
   }
 
@@ -100,14 +107,20 @@ export function NameGenerator() {
       clearShareParam();
     }
     regenerate();
+    track("name_regenerated");
   }
 
   function onReveal(personal: GeneratedName) {
     setFeedback("");
     clearShareParam();
     setOverride({ kind: "personal", name: personal });
+    track("personal_name_revealed", { name: personal.display });
+    // On small screens the card is often above the fold by now. Bring the
+    // whole card into view so the new name is seen.
     const card = cardRef.current;
-    if (card && card.getBoundingClientRect().top < 0) {
+    if (!card) return;
+    const { top, bottom } = card.getBoundingClientRect();
+    if (top < 0 || bottom > window.innerHeight) {
       const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
       card.scrollIntoView({ block: "start", behavior: reduce ? "auto" : "smooth" });
     }
@@ -159,12 +172,23 @@ export function NameGenerator() {
               </div>
             </div>
             <div className="mt-4">
-              <ShareControls name={name} label={label} onFeedback={say} />
+              <ShareControls
+                name={name}
+                label={label}
+                onFeedback={say}
+                onAction={(action) =>
+                  name &&
+                  track(action === "share" ? "name_shared" : "name_card_downloaded", {
+                    name: name.display,
+                    mode,
+                  })
+                }
+              />
             </div>
             {mode === "random" && state.status === "ready" && state.runningLow && (
               <p className="mt-5 text-sm text-ink-soft">
-                Fresh names are running short, so some first names or surnames may come back
-                sooner than usual.
+                Fresh names are running short, so some first names or surnames may come back sooner
+                than usual.
               </p>
             )}
           </div>
@@ -176,7 +200,11 @@ export function NameGenerator() {
       </p>
 
       <div className="mt-2 w-full">
-        <PersonalisedNameForm onReveal={onReveal} />
+        <PersonalisedNameForm
+          onReveal={onReveal}
+          onRepeat={() => track("personal_name_repeat")}
+          shownId={mode === "personal" && name ? name.id : null}
+        />
       </div>
 
       <div className="mt-6 flex w-full flex-col items-center gap-3">
@@ -186,7 +214,10 @@ export function NameGenerator() {
           variant="ghost"
           aria-expanded={panelOpen}
           aria-controls="favourites-region"
-          onClick={() => setPanelOpen((o) => !o)}
+          onClick={() => {
+            if (!panelOpen) track("favourites_opened", { count: favourites.length });
+            setPanelOpen((o) => !o);
+          }}
           className="h-11 rounded-full px-4 text-ink-soft hover:text-ink"
         >
           Favourites{favourites.length > 0 ? ` (${favourites.length})` : ""}

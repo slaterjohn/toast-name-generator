@@ -256,6 +256,42 @@ describe("NameGenerator", () => {
     });
   });
 
+  describe("pressing Reveal again", () => {
+    const HOLD = "Woah! Hold your horses, sunshine.";
+
+    it("explains that the same name gives the same Toast name, and clears when the name changes", async () => {
+      const user = userEvent.setup();
+      render(<NameGenerator />);
+      await currentName();
+      const input = screen.getByLabelText("Your name");
+      const reveal = screen.getByRole("button", { name: "Reveal my Toast name" });
+      await user.type(input, "Sidney");
+      await user.click(reveal);
+      const first = await currentName();
+      expect(screen.getByTestId("repeat-note")).toBeEmptyDOMElement();
+
+      await user.click(reveal);
+      expect(screen.getByTestId("repeat-note")).toHaveTextContent(HOLD);
+      expect(await currentName()).toBe(first);
+
+      await user.type(input, "x");
+      expect(screen.getByTestId("repeat-note")).toBeEmptyDOMElement();
+    });
+
+    it("reveals again without the warning after a random name was shown", async () => {
+      const user = userEvent.setup();
+      render(<NameGenerator />);
+      await currentName();
+      await user.type(screen.getByLabelText("Your name"), "Sidney");
+      await user.click(screen.getByRole("button", { name: "Reveal my Toast name" }));
+      const personal = await currentName();
+      await regenerate(user);
+      await user.click(screen.getByRole("button", { name: "Reveal my Toast name" }));
+      expect(await currentName()).toBe(personal);
+      expect(screen.getByTestId("repeat-note")).toBeEmptyDOMElement();
+    });
+  });
+
   describe("share links", () => {
     afterEach(() => window.history.replaceState(null, "", "/"));
 

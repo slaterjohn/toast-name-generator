@@ -1,10 +1,12 @@
-# Toast Name Generator
+# Toast of London Name Generator
+
+Live at [toastnames.com](https://toastnames.com). Created by [John Slater](https://slaterjohn.com).
 
 A small web app that shows one convincingly ridiculous British name at a time, with a button to get another. It is fan-inspired by the naming style of *Toast of London* and *Toast of Tinseltown*, and it only ever produces original names.
 
 > An unofficial fan-inspired name generator. Not affiliated with the creators or broadcasters of Toast of London or Toast of Tinseltown.
 
-Everything runs in the browser. There is no backend, database, account, analytics or AI service, and the page makes no requests to other origins after it loads.
+Everything runs in the browser. There is no backend, database, account or AI service. The only other origin the page talks to is PostHog (EU), for anonymous, cookieless usage analytics, and only when the build sets `NEXT_PUBLIC_POSTHOG_KEY`. The name you type into "Find your own Toast name" is never stored or sent anywhere, analytics included.
 
 ## What it does
 
@@ -17,6 +19,26 @@ Everything runs in the browser. There is no backend, database, account, analytic
 - **Share link** copies a link to the displayed name (or opens the share sheet on phones). Links encode only the generated name, such as `?n=cyril.kettle`.
 - **Download card** saves the name as a 1200 × 630 PNG, drawn in the browser.
 - Keyboard operable, screen-reader friendly (polite live region for the new name, `aria-pressed` on the favourite toggle) and respects `prefers-reduced-motion`.
+
+- Installable as an app (PWA): web app manifest, maskable icons, favicon, Apple touch icon and a service worker that keeps the app working offline after the first visit.
+- Search and AI-assistant friendly: about, how-to and FAQ copy rendered as static HTML, schema.org `WebApplication` + `FAQPage` structured data, Open Graph image, `robots.txt`, `sitemap.xml` and `llms.txt`.
+
+## Analytics
+
+[PostHog](https://posthog.com) is loaded after the page is idle, from the app's own bundle (`posthog-js/no-external`, so no extra scripts are fetched). It keeps nothing in cookies or storage (memory persistence), records no sessions, runs no surveys and does no autocapture. It honours Do Not Track and Global Privacy Control. Events: `$pageview`, `$pageleave`, `name_regenerated`, `personal_name_revealed`, `personal_name_repeat`, `name_copied`, `name_favourited`, `name_unfavourited`, `name_shared`, `name_card_downloaded`, `shared_name_opened`, `favourites_opened`, `app_installed`. Generated names may be attached; nothing typed by the visitor ever is.
+
+Set these at build time (they are public, client-side values):
+
+| Variable | Default | Purpose |
+| --- | --- | --- |
+| `NEXT_PUBLIC_POSTHOG_KEY` | empty (analytics off) | PostHog project API key (`phc_…`) |
+| `NEXT_PUBLIC_POSTHOG_HOST` | `https://eu.i.posthog.com` | PostHog ingestion host |
+
+If you change the host, update `connect-src` in `nginx.conf` too.
+
+## Icons and social image
+
+`public/` holds the favicon, PWA icons, Apple touch icon and `og-image.png`. To redraw them after changing the artwork, run `node scripts/generate-icons.mjs` (set `CHROMIUM_PATH` to use a preinstalled Chromium).
 
 ## Running it
 
@@ -49,6 +71,8 @@ The image is a two-stage build: Node 22 produces the static export, then an unpr
 
 ```bash
 docker compose up -d --build     # http://127.0.0.1:3080
+# with analytics:
+NEXT_PUBLIC_POSTHOG_KEY=phc_xxx docker compose up -d --build
 docker compose down
 ```
 
@@ -63,6 +87,10 @@ The container runs read-only with `no-new-privileges`.
 The build step needs network access: `npm ci` fetches packages and `next/font` downloads the two fonts from Google Fonts so they can be self-hosted. If a build fails with a font fetch error on a flaky connection, run it again.
 
 Because the output is plain static files, `./out` can also be hosted on any static host (GitHub Pages, Netlify, S3, Caddy and so on).
+
+### Deploying with Dokploy
+
+Create an **Application** from this GitHub repository with build type **Dockerfile**, set the build argument `NEXT_PUBLIC_POSTHOG_KEY`, and add the domains `toastnames.com` and `www.toastnames.com` on container port **8080** with HTTPS (Let's Encrypt). nginx redirects `www` to the bare domain. The health check is `/healthz`.
 
 ### Testing over Tailscale
 

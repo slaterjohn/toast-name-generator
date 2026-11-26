@@ -85,10 +85,15 @@ test("disables the name animation when reduced motion is requested", async ({ pa
   expect(parseFloat(duration)).toBeLessThan(0.001);
 });
 
-test("makes no requests to other origins", async ({ page }) => {
+// PostHog (EU) is the one allowed third party, and only in builds that set a key.
+const ANALYTICS_ORIGIN = "https://eu.i.posthog.com";
+
+test("makes no requests to other origins except anonymous analytics", async ({ page }) => {
   const external: string[] = [];
+  await page.route(`${ANALYTICS_ORIGIN}/**`, (route) => route.fulfill({ status: 200, body: "{}" }));
   page.on("request", (r) => {
-    if (new URL(r.url()).origin !== new URL(page.url()).origin) external.push(r.url());
+    const origin = new URL(r.url()).origin;
+    if (origin !== new URL(page.url()).origin && origin !== ANALYTICS_ORIGIN) external.push(r.url());
   });
   await page.reload();
   await expect(nameLocator(page)).toHaveCount(1);
