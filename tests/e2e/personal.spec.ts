@@ -66,6 +66,7 @@ test("the entered name is never stored, put in a URL or sent", async ({ page, co
   if (browserName === "chromium") await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   const secret = "Zebedee Privacytest";
   const requests: string[] = [];
+  await page.route("https://eu.i.posthog.com/**", (route) => route.fulfill({ status: 200, body: "{}" }));
   page.on("request", (r) => requests.push(`${r.url()} ${r.postData() ?? ""}`));
 
   await reveal(page, secret);

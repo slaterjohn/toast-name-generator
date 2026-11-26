@@ -1,0 +1,21 @@
+# Toast of London Name Generator
+
+> A free, unofficial, fan-made web app at https://toastnames.com that generates convincingly ridiculous British names in the style of the sitcom Toast of London. It can also turn a person's own name into a "Toast name" that is always the same for the same input. Created by John Slater (https://slaterjohn.com).
+
+Key facts:
+
+- Every name is original. The generator never reuses the show's real character names.
+- Random names: press Regenerate for a new name. Names don't repeat during a visit.
+- Personal Toast name: type your name and press "Reveal my Toast name". The same name always gives the same result on any device, so friends can compare.
+- Share a name as a link, copy it, or download it as a 1200 × 630 image card.
+- Names are made up in the browser. The name a person types is never stored or sent anywhere. Favourites are saved only in that browser.
+- Free, no sign-up, works in any modern browser and can be installed as an app (PWA).
+- Not affiliated with the creators or broadcasters of Toast of London or Toast of Tinseltown.
+
+## Pages
+
+- [Toast of London Name Generator](https://toastnames.com/): the generator, how-to guide and FAQ.
+
+## Optional
+
+- [Creator: John Slater](https://slaterjohn.com)

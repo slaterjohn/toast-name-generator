@@ -11,6 +11,8 @@ interface Props {
   name: GeneratedName | null;
   label: string;
   onFeedback: (message: string) => void;
+  /** Called after a successful share or download, for analytics. */
+  onAction?: (action: "share" | "download") => void;
 }
 
 /**
@@ -18,7 +20,7 @@ interface Props {
  * encode only the generated name (`?n=cyril.kettle`), never anything typed
  * into the form. Nothing happens until the person presses a button.
  */
-export function ShareControls({ name, label, onFeedback }: Props) {
+export function ShareControls({ name, label, onFeedback, onAction }: Props) {
   const [busy, setBusy] = useState(false);
 
   async function handleShare() {
@@ -26,7 +28,8 @@ export function ShareControls({ name, label, onFeedback }: Props) {
     const url = shareUrl(name, window.location.href);
     if (typeof navigator.share === "function" && window.matchMedia("(pointer: coarse)").matches) {
       try {
-        await navigator.share({ title: "Toast Name Generator", text: name.display, url });
+        await navigator.share({ title: "Toast of London Name Generator", text: name.display, url });
+        onAction?.("share");
         return;
       } catch (error) {
         if ((error as DOMException)?.name === "AbortError") return;
@@ -34,6 +37,7 @@ export function ShareControls({ name, label, onFeedback }: Props) {
       }
     }
     const ok = await copyText(url);
+    if (ok) onAction?.("share");
     onFeedback(ok ? "Link copied to the clipboard." : `Couldn't copy the link. Here it is: ${url}`);
   }
 
@@ -44,6 +48,7 @@ export function ShareControls({ name, label, onFeedback }: Props) {
       const { downloadNameCard } = await import("@/lib/name-card");
       await downloadNameCard(name.display, label);
       onFeedback("Name card downloaded.");
+      onAction?.("download");
     } catch {
       onFeedback("Couldn't create the name card in this browser.");
     } finally {
@@ -51,12 +56,17 @@ export function ShareControls({ name, label, onFeedback }: Props) {
     }
   }
 
-  const classes =
-    "h-11 rounded-full px-4 text-ink-soft hover:bg-paper-deep hover:text-ink";
+  const classes = "h-11 rounded-full px-4 text-ink-soft hover:bg-paper-deep hover:text-ink";
 
   return (
     <div className="flex flex-wrap justify-center gap-1">
-      <Button type="button" variant="ghost" className={classes} onClick={handleShare} disabled={!name}>
+      <Button
+        type="button"
+        variant="ghost"
+        className={classes}
+        onClick={handleShare}
+        disabled={!name}
+      >
         <Share2 aria-hidden="true" />
         Share link
       </Button>

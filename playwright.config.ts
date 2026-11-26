@@ -3,6 +3,10 @@ import { defineConfig, devices } from "@playwright/test";
 // Runs against the static export (build first: `npm run build`), or against a
 // running deployment when E2E_BASE_URL is set, e.g. the Docker container.
 const external = process.env.E2E_BASE_URL;
+// Optional: point Chromium projects at a preinstalled browser build.
+const chromiumLaunch = process.env.CHROMIUM_PATH
+  ? { launchOptions: { executablePath: process.env.CHROMIUM_PATH } }
+  : {};
 
 export default defineConfig({
   testDir: "tests/e2e",
@@ -15,8 +19,8 @@ export default defineConfig({
     reuseExistingServer: false,
   },
   projects: [
-    { name: "desktop", use: { ...devices["Desktop Chrome"] } },
-    { name: "mobile", use: { ...devices["Pixel 7"] } },
+    { name: "desktop", use: { ...devices["Desktop Chrome"], ...chromiumLaunch } },
+    { name: "mobile", use: { ...devices["Pixel 7"], ...chromiumLaunch } },
     // Personalised mappings must match across engines.
     { name: "firefox", use: { ...devices["Desktop Firefox"] }, testMatch: /personal\.spec\.ts/ },
     // Playwright's WebKit build crashes on some macOS releases, so it is opt-in

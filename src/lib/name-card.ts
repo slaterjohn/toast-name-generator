@@ -112,7 +112,7 @@ export async function renderNameCard(display: string, label: string): Promise<Bl
 
   ctx.fillStyle = COLOURS.inkSoft;
   ctx.font = `400 18px ${ui}`;
-  ctx.fillText("Toast Name Generator · an unofficial fan-inspired generator", WIDTH / 2, 545);
+  ctx.fillText("toastnames.com · an unofficial fan-inspired name generator", WIDTH / 2, 545);
 
   return new Promise((resolve, reject) =>
     canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("PNG export failed"))), "image/png"),
